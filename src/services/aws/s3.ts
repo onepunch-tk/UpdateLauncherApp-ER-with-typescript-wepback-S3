@@ -24,6 +24,9 @@ export const downloadFiles = async (downloadParams: GetObjectCommandInput, updat
             const readable = fileResult.Body;
             await fileWriteAsync(readable, updatePath, fileName, rootPath);
         }
+        // const s3 = new AWS.S3();
+        // const s3Object = await s3.getObject(downloadParams);
+        // await fileWriteAsync(s3Object.createReadStream(), updatePath, fileName, rootPath);
 
     } catch (err) {
         console.log(err);
@@ -41,11 +44,12 @@ export const listFiles = async (listCommandParams: listCommandArray) => {
             }
 
             const outputs = await s3Client.send(new ListObjectsCommand(download_list_parmas));
-            const filterOutputs = outputs.Contents.filter((output)=>{
-               const parsedPath = path.parse(output.Key);
-               if(parsedPath.ext !== '') return output;
-            });
-            filesArray.push(filterOutputs);
+            // const filterOutputs = outputs.Contents.filter((output)=>{
+            //    const parsedPath = path.parse(output.Key);
+            //    if(parsedPath.ext !== '') return output;
+            // });
+            filesArray.push(outputs.Contents);
+            // filesArray.push(filterOutputs);
             // if (data.Contents) {
             //     for (const content of data.Contents) {
             //         if (content.Key?.includes('.')) {

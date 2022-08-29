@@ -51,8 +51,11 @@ export const onIpcEvent = (isDev: boolean) => {
             console.log('UPDATE_FILE_TOTAL_COUNT');
             _objects = await getFiles(isDev);
         }
-        console.log(UPDATE_FILE_TOTAL_COUNT);
-        const totalFileCount: number = _objects[0].length + _objects[1].length;
+
+        let totalFileCount =  0;
+        for (const contents of _objects) {
+            totalFileCount += contents.length;
+        }
         const totalCountParams: IIpcParams = {
             key: UPDATE_FILE_TOTAL_COUNT,
             message: {totalFileCount}
@@ -63,20 +66,17 @@ export const onIpcEvent = (isDev: boolean) => {
     ipcMain.on(UPDATE_FILE_NAME, async (_e) => {
         //TODO: if current version different update version -> download files
         if (!_objects) {
-            console.log('UPDATE_FILE_NAME');
             _objects = await getFiles(isDev);
         }
-        console.log('update');
+
         for (const contents of _objects) {
             for (const content of contents) {
+                if(content.Key === prefix_main) continue;
                 const paredPath = path.parse(content.Key);
-                const {mainUpdatePath, gameUpdatePath} = getExtraUpdatePath(isDev);
+                const {mainUpdatePath} = getExtraUpdatePath(isDev);
+                const extraUpdatePath = paredPath.dir.replace(prefix_main, mainUpdatePath);
+                const rootPath = mainUpdatePath;
 
-                const extraUpdatePath = content.Key.includes(prefix_main) ?
-                    paredPath.dir.replace(prefix_main, mainUpdatePath) :
-                    paredPath.dir.replace(prefix_game, gameUpdatePath);
-
-                const rootPath = content.Key.includes(prefix_main) ? mainUpdatePath : gameUpdatePath;
                 await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base, rootPath);
                 await sleep(200);
 
@@ -91,27 +91,29 @@ export const onIpcEvent = (isDev: boolean) => {
 
     ipcMain.on(RUN_RAINER_APP, async (_e) => {
         const extraPath = getExtraPath(isDev);
-
-
         const {ver, date} = await jsonReadAsync(path.join(
             extraPath, 'update.json')
         );
 
         await jsonWriteAsync(path.join(extraPath, 'release.json'), {ver, date});
-
         await sleep(1000);
-        const {mainUpdatePath} = getExtraUpdatePath(isDev);
 
-        // spawn(path.join(mainUpdatePath, 'GijangStart.exe'));
-        exec.execFile(path.join(mainUpdatePath, 'GijangStart.exe'), (err, data) => {
-            if (err) console.error(err);
-        });
+        const {mainUpdatePath} = getExtraUpdatePath(isDev);
 
         fs.unlink(path.join(extraPath, 'update.json'), (err) => {
             console.log(err);
         })
-        app.quit();
+        // spawn(path.join(mainUpdatePath, 'GijangStart.exe'));
+        try {
+            const cp = exec.spawn(path.join(mainUpdatePath, 'GijangStart.exe'));
+            cp.on('exit', ()=> {
+                app.quit();
+            })
 
+        } catch (err) {
+            console.error(err);
+            app.quit();
+        }
     });
 
     const getFiles = async (isDev: boolean) => {
@@ -121,10 +123,6 @@ export const onIpcEvent = (isDev: boolean) => {
                 Prefix: prefix_main,
                 UpdatePath: mainUpdatePath,
             },
-            {
-                Prefix: prefix_game,
-                UpdatePath: gameUpdatePath,
-            }
         ];
         return await listFiles(listCommandParams);
     }

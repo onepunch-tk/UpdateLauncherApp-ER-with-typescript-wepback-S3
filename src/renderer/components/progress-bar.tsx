@@ -145,8 +145,7 @@ export const ProgressBar = () => {
                 return {...prevState, isNeedUpdate: true};
             });
 
-            //@ts-ignore
-            main.updateAPI.sendMessage(UPDATE_FILE_TOTAL_COUNT);
+
 
             //@ts-ignore
             main.updateAPI.listenerOnce(UPDATE_FILE_TOTAL_COUNT,
@@ -157,9 +156,12 @@ export const ProgressBar = () => {
             setUpdateState((prevState) => {
                 return {
                     ...prevState, fileName: 'Start Now!',
-                    isNeedUpdate: false, percent: '100'
+                    isNeedUpdate: false, percent: '100',isUpdateSuccess:true
                 };
             });
+
+            //@ts-ignore
+            main.updateAPI.sendMessage(RUN_RAINER_APP);
         }
     }
 

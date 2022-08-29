@@ -288,6 +288,6 @@ $RECYCLE.BIN/
 *.lnk
 
 # update path
-src/extraResources
+
 src/extraResources/Brainer_Main
 src/extraResources/Brainer_Main/

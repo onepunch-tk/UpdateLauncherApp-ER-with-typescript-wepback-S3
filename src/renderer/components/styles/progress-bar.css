@@ -1,0 +1,33 @@
+.progress-bar-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 50px 0px;
+    width: 80%;
+}
+
+.progress-bar-container span {
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+}
+
+
+.progress-bar__text {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+
+    margin: 10px 0px;
+}
+
+.progress-bar__version {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+.progress-bar__version span {
+    padding-bottom: 10px;
+}

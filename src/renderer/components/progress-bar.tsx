@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {Line as RcProgressBar} from "rc-progress";
 import {
     CHECK_VER,
-    CHECK_VER_DIFFERENT,
+    CHECK_VER_DIFFERENT, RUN_RAINER_APP,
     UPDATE_FILE_NAME,
     UPDATE_FILE_TOTAL_COUNT,
     UPDATE_FILE_UPDATED_COUNT,
@@ -45,6 +45,19 @@ export const ProgressBar = () => {
             main.updateAPI.listenerOn(CHECK_VER,
                 listenerCallback,
                 checkVersionStateCallback);
+        }
+
+        if(updateState.percent === '100' && !updateState.isUpdateSuccess) {
+            setUpdateState((prevState)=> {
+               return {...prevState, fileName:'Start Now!', isNeedUpdate:false, isUpdateSuccess:true}
+            });
+
+            setVersionState((prevState)=>{
+                return {...prevState, currentVersion:prevState.updateVersion};
+            })
+
+            //@ts-ignore
+            main.updateAPI.sendMessage(RUN_RAINER_APP);
         }
 
         // if (updateState.totalFileCount === 0) {
@@ -103,7 +116,6 @@ export const ProgressBar = () => {
 
     const updateFileNameCallback = (ipcParams: IIpcParams) => {
         setUpdateState((prevState) => {
-            console.log('updateFileNameCallback');
             prevState.updatedFileCount += 1;
             const percentDouble = (prevState.updatedFileCount / prevState.totalFileCount) * 100;
             const percentString = percentDouble === 100 ? percentDouble.toPrecision(3) : percentDouble.toPrecision(4);

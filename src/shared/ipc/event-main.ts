@@ -1,11 +1,10 @@
-import {ipcMain, Notification} from "electron";
+import {ipcMain, app} from "electron";
 import {
     CHECK_VER,
     CHECK_VER_DIFFERENT,
-    CHECK_VER_SAME,
+    CHECK_VER_SAME, RUN_RAINER_APP,
     UPDATE_FILE_NAME,
-    UPDATE_FILE_TOTAL_COUNT, UPDATE_FILE_UPDATED_COUNT,
-    UPDATE_SUCCESS
+    UPDATE_FILE_TOTAL_COUNT
 } from "./constants";
 import {getExtraPath, getExtraUpdatePath} from "../path/extra-path";
 import {downloadFiles, listFiles} from "../../services/aws/s3";
@@ -16,9 +15,11 @@ import {
     prefix_main,
     releaseJsonKey
 } from "../../services/aws/configures";
-import {fileWriteAsync, jsonReadAsync} from "../../services/aws/file-stream";
+import {jsonReadAsync, jsonWriteAsync} from "../../services/aws/file-stream";
 import path from "path";
 import {_Object} from "@aws-sdk/client-s3";
+import * as fs from "fs";
+import {spawn} from 'child_process';
 
 export const onIpcEvent = (isDev: boolean) => {
     let _objects: _Object[][];
@@ -88,6 +89,30 @@ export const onIpcEvent = (isDev: boolean) => {
         }
     });
 
+    ipcMain.on(RUN_RAINER_APP, async (_e)=> {
+        const extraPath = getExtraPath(isDev);
+
+
+        const {ver, date} = await jsonReadAsync(path.join(
+            extraPath, 'update.json')
+        );
+
+        await jsonWriteAsync(path.join(extraPath, 'release.json'), {ver, date});
+
+        await sleep(1000);
+        const {mainUpdatePath} =getExtraUpdatePath(isDev);
+        try {
+            spawn(path.join(mainUpdatePath,'GijangStart.exe'));
+        } catch (err) {
+            console.error(err);
+        }
+        fs.unlink(path.join(extraPath, 'update.json'),(err)=>{
+            console.log(err);
+        })
+        app.quit();
+
+    });
+
     const getFiles = async (isDev: boolean) => {
         const {mainUpdatePath, gameUpdatePath} = getExtraUpdatePath(isDev);
         const listCommandParams: listCommandArray = [
@@ -103,7 +128,7 @@ export const onIpcEvent = (isDev: boolean) => {
         return await listFiles(listCommandParams);
     }
 
-    function sleep(ms: number) {
+    const sleep= async (ms: number) => {
         return new Promise((resolve) => {
             setTimeout(resolve, ms);
         });

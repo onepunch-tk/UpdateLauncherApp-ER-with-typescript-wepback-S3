@@ -19,7 +19,7 @@ import {jsonReadAsync, jsonWriteAsync} from "../../services/aws/file-stream";
 import path from "path";
 import {_Object} from "@aws-sdk/client-s3";
 import * as fs from "fs";
-import {spawn} from 'child_process';
+import * as exec from 'child_process';
 
 export const onIpcEvent = (isDev: boolean) => {
     let _objects: _Object[][];
@@ -51,7 +51,7 @@ export const onIpcEvent = (isDev: boolean) => {
             console.log('UPDATE_FILE_TOTAL_COUNT');
             _objects = await getFiles(isDev);
         }
-
+        console.log(UPDATE_FILE_TOTAL_COUNT);
         const totalFileCount: number = _objects[0].length + _objects[1].length;
         const totalCountParams: IIpcParams = {
             key: UPDATE_FILE_TOTAL_COUNT,
@@ -66,7 +66,7 @@ export const onIpcEvent = (isDev: boolean) => {
             console.log('UPDATE_FILE_NAME');
             _objects = await getFiles(isDev);
         }
-
+        console.log('update');
         for (const contents of _objects) {
             for (const content of contents) {
                 const paredPath = path.parse(content.Key);
@@ -77,7 +77,7 @@ export const onIpcEvent = (isDev: boolean) => {
                     paredPath.dir.replace(prefix_game, gameUpdatePath);
 
                 const rootPath = content.Key.includes(prefix_main) ? mainUpdatePath : gameUpdatePath;
-                await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base,rootPath);
+                await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base, rootPath);
                 await sleep(200);
 
                 const fileNameParams: IIpcParams = {
@@ -89,7 +89,7 @@ export const onIpcEvent = (isDev: boolean) => {
         }
     });
 
-    ipcMain.on(RUN_RAINER_APP, async (_e)=> {
+    ipcMain.on(RUN_RAINER_APP, async (_e) => {
         const extraPath = getExtraPath(isDev);
 
 
@@ -100,13 +100,14 @@ export const onIpcEvent = (isDev: boolean) => {
         await jsonWriteAsync(path.join(extraPath, 'release.json'), {ver, date});
 
         await sleep(1000);
-        const {mainUpdatePath} =getExtraUpdatePath(isDev);
-        try {
-            spawn(path.join(mainUpdatePath,'GijangStart.exe'));
-        } catch (err) {
-            console.error(err);
-        }
-        fs.unlink(path.join(extraPath, 'update.json'),(err)=>{
+        const {mainUpdatePath} = getExtraUpdatePath(isDev);
+
+        // spawn(path.join(mainUpdatePath, 'GijangStart.exe'));
+        exec.execFile(path.join(mainUpdatePath, 'GijangStart.exe'), (err, data) => {
+            if (err) console.error(err);
+        });
+
+        fs.unlink(path.join(extraPath, 'update.json'), (err) => {
             console.log(err);
         })
         app.quit();
@@ -128,7 +129,7 @@ export const onIpcEvent = (isDev: boolean) => {
         return await listFiles(listCommandParams);
     }
 
-    const sleep= async (ms: number) => {
+    const sleep = async (ms: number) => {
         return new Promise((resolve) => {
             setTimeout(resolve, ms);
         });

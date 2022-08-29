@@ -145,12 +145,13 @@ export const ProgressBar = () => {
                 return {...prevState, isNeedUpdate: true};
             });
 
-
-
             //@ts-ignore
             main.updateAPI.listenerOnce(UPDATE_FILE_TOTAL_COUNT,
                 listenerCallback,
                 updateTotalCountCallback);
+
+            //@ts-ignore
+            main.updateAPI.sendMessage(UPDATE_FILE_TOTAL_COUNT);
 
         } else {
             setUpdateState((prevState) => {

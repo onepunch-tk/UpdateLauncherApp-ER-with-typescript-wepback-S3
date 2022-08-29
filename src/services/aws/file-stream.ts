@@ -43,7 +43,6 @@ export const fileWriteAsync = async (readable: Readable, filePath: string, fileN
                 await fs.promises.mkdir(mkdirPath);
             }
         }
-
         await readable.pipe(fs.createWriteStream(path.join(filePath, fileName), {flags: 'w+',}));
     } catch (err) {
         console.error(err + `${rootPath}, ${filePath} ${fileName}`);

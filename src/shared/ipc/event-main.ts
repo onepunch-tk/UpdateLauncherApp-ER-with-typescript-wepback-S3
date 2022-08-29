@@ -71,8 +71,8 @@ export const onIpcEvent = (isDev: boolean) => {
 
         for (const contents of _objects) {
             for (const content of contents) {
-                if(content.Key === prefix_main) continue;
                 const paredPath = path.parse(content.Key);
+                if(paredPath.base === 'Brainer_Main') continue;
                 const {mainUpdatePath} = getExtraUpdatePath(isDev);
                 const extraUpdatePath = paredPath.dir.replace(prefix_main, mainUpdatePath);
                 const rootPath = mainUpdatePath;

@@ -72,7 +72,16 @@ export const onIpcEvent = (isDev: boolean) => {
         for (const contents of _objects) {
             for (const content of contents) {
                 const paredPath = path.parse(content.Key);
-                if(paredPath.base === 'Brainer_Main') continue;
+
+                const fileNameParams: IIpcParams = {
+                    key: UPDATE_FILE_NAME,
+                    message: {fileName: paredPath.base}
+                };
+                if(paredPath.base === 'Brainer_Main')
+                {
+                    _e.reply(UPDATE_FILE_NAME, fileNameParams);
+                    continue;
+                }
                 const {mainUpdatePath} = getExtraUpdatePath(isDev);
                 const extraUpdatePath = paredPath.dir.replace(prefix_main, mainUpdatePath);
                 const rootPath = mainUpdatePath;
@@ -80,10 +89,7 @@ export const onIpcEvent = (isDev: boolean) => {
                 await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base, rootPath);
                 await sleep(200);
 
-                const fileNameParams: IIpcParams = {
-                    key: UPDATE_FILE_NAME,
-                    message: {fileName: paredPath.base}
-                };
+
                 _e.reply(UPDATE_FILE_NAME, fileNameParams);
             }
         }

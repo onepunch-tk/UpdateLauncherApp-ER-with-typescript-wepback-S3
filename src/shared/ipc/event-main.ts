@@ -77,19 +77,17 @@ export const onIpcEvent = (isDev: boolean) => {
                     key: UPDATE_FILE_NAME,
                     message: {fileName: paredPath.base}
                 };
-                if(paredPath.base === 'Brainer_Main')
-                {
+                if(paredPath.base === 'Brainer_Main'){
                     _e.reply(UPDATE_FILE_NAME, fileNameParams);
                     continue;
                 }
+
                 const {mainUpdatePath} = getExtraUpdatePath(isDev);
                 const extraUpdatePath = paredPath.dir.replace(prefix_main, mainUpdatePath);
                 const rootPath = mainUpdatePath;
 
                 await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base, rootPath);
-                await sleep(200);
-
-
+                await sleep(500);
                 _e.reply(UPDATE_FILE_NAME, fileNameParams);
             }
         }

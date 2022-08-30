@@ -1,4 +1,11 @@
 import {ipcMain, app} from "electron";
+import {getExtraPath, getExtraUpdatePath} from "../path/extra-path";
+import {downloadFiles, listFiles} from "../../services/aws/s3";
+import {jsonReadAsync, jsonWriteAsync} from "../../services/aws/file-stream";
+import path from "path";
+import {_Object} from "@aws-sdk/client-s3";
+import * as fs from "fs";
+import * as exec from 'child_process';
 import {
     CHECK_VER,
     CHECK_VER_DIFFERENT,
@@ -6,20 +13,12 @@ import {
     UPDATE_FILE_NAME,
     UPDATE_FILE_TOTAL_COUNT
 } from "./constants";
-import {getExtraPath, getExtraUpdatePath} from "../path/extra-path";
-import {downloadFiles, listFiles} from "../../services/aws/s3";
 import {
     getObjectCommandInput,
     listCommandArray,
-    prefix_game,
     prefix_main,
     releaseJsonKey
 } from "../../services/aws/configures";
-import {jsonReadAsync, jsonWriteAsync} from "../../services/aws/file-stream";
-import path from "path";
-import {_Object} from "@aws-sdk/client-s3";
-import * as fs from "fs";
-import * as exec from 'child_process';
 
 export const onIpcEvent = (isDev: boolean) => {
     let _objects: _Object[][];
@@ -68,7 +67,6 @@ export const onIpcEvent = (isDev: boolean) => {
         if (!_objects) {
             _objects = await getFiles(isDev);
         }
-
         for (const contents of _objects) {
             for (const content of contents) {
                 const paredPath = path.parse(content.Key);
@@ -84,13 +82,12 @@ export const onIpcEvent = (isDev: boolean) => {
 
                 const {mainUpdatePath} = getExtraUpdatePath(isDev);
                 const extraUpdatePath = paredPath.dir.replace(prefix_main, mainUpdatePath);
-                const rootPath = mainUpdatePath;
 
-                await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base, rootPath);
-                await sleep(300);
+                await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base, mainUpdatePath);
                 _e.reply(UPDATE_FILE_NAME, fileNameParams);
             }
         }
+
     });
 
     ipcMain.on(RUN_RAINER_APP, async (_e) => {
@@ -136,5 +133,6 @@ export const onIpcEvent = (isDev: boolean) => {
             setTimeout(resolve, ms);
         });
     }
+
 };
 

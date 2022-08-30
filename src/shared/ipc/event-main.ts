@@ -88,7 +88,6 @@ export const onIpcEvent = (isDev: boolean) => {
 
                 await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base, rootPath);
                 await sleep(300);
-                console.log(paredPath.base);
                 _e.reply(UPDATE_FILE_NAME, fileNameParams);
             }
         }
@@ -106,7 +105,7 @@ export const onIpcEvent = (isDev: boolean) => {
         const {mainUpdatePath} = getExtraUpdatePath(isDev);
 
         fs.unlink(path.join(extraPath, 'update.json'), (err) => {
-            console.log(err);
+            //
         })
         // spawn(path.join(mainUpdatePath, 'GijangStart.exe'));
         try {

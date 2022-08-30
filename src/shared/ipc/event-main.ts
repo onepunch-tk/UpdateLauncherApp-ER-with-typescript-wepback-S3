@@ -87,7 +87,7 @@ export const onIpcEvent = (isDev: boolean) => {
                 const rootPath = mainUpdatePath;
 
                 await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base, rootPath);
-                await sleep(100);
+                await sleep(300);
                 console.log(paredPath.base);
                 _e.reply(UPDATE_FILE_NAME, fileNameParams);
             }

@@ -43,8 +43,7 @@ app.on('activate', () => {
         createWindow();
     }
 });
-console.log(process.env.S3_ACCESS_KEY);
-console.log(process.env.S3_SECRET_KEY);
+
 onIpcEvent(isDev);
 
 

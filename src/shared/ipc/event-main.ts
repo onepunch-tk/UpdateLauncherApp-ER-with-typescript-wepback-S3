@@ -100,6 +100,7 @@ export const onIpcEvent = (isDev: boolean) => {
         );
 
         await jsonWriteAsync(path.join(extraPath, 'release.json'), {ver, date});
+
         await sleep(1000);
 
         const {mainUpdatePath} = getExtraUpdatePath(isDev);
@@ -136,9 +137,6 @@ export const onIpcEvent = (isDev: boolean) => {
             setTimeout(resolve, ms);
         });
     }
-
-
-
 };
 
 

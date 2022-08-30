@@ -4,14 +4,14 @@ import {Readable} from "stream";
 import path from "path";
 
 
-export const jsonWriteAsync = async (filePath: string, release: {ver:string, date:string}) => {
+export const jsonWriteAsync = async (filePath: string, release: { ver: string, date: string }) => {
     try {
         const updateRelese = {
-            ver:release.ver,
-            date:release.date
+            ver: release.ver,
+            date: release.date
         };
         const jsonBuffer = JSON.stringify(updateRelese);
-        await fileAsync.writeFile(filePath, jsonBuffer,{flag:'w+'} );
+        await fileAsync.writeFile(filePath, jsonBuffer, {flag: 'w+'});
     } catch (err) {
         console.log(err);
     }
@@ -25,12 +25,12 @@ export const jsonReadAsync = async (filePath: string) => {
     }
 }
 
-export const fileWriteAsync = async (readable: Readable, filePath: string, fileName: string, rootPath?:string) => {
+export const fileWriteAsync = async (readable: Readable, filePath: string, fileName: string, rootPath?: string) => {
     try {
         /**
          * full path check*/
         if (!fs.existsSync(filePath)) {
-            if(!fs.existsSync(rootPath)) await fs.promises.mkdir(rootPath);
+            if (!fs.existsSync(rootPath)) await fs.promises.mkdir(rootPath);
 
             const paths = filePath.replace(rootPath, '').split('/');
             let mkdirPath = rootPath;
@@ -43,13 +43,10 @@ export const fileWriteAsync = async (readable: Readable, filePath: string, fileN
                 await fs.promises.mkdir(mkdirPath);
             }
         }
-        const result = await readable.pipe(fs.createWriteStream(path.join(filePath, fileName)));
-        if(result) {
-            console.log(readable);
-            console.log(readable.readableEncoding);
-        }
 
+        return readable.pipe(fs.createWriteStream(path.join(filePath, fileName)));
     } catch (err) {
+        return undefined;
         console.error(err + `${rootPath}, ${filePath} ${fileName}`);
     }
 }

@@ -30,21 +30,21 @@ export const onIpcEvent = (isDev: boolean) => {
             extraPath, 'release.json')
         );
 
-        await downloadFiles(getObjectCommandInput(releaseJsonKey), extraPath, 'update.json');
-        await sleep(500);
-        const updateJson = await jsonReadAsync(path.join(
-            extraPath, 'update.json')
-        );
+        const writeStream = await downloadFiles(getObjectCommandInput(releaseJsonKey), extraPath, 'update.json');
+        writeStream.on('finish', async ()=> {
+            const updateJson = await jsonReadAsync(path.join(
+                extraPath, 'update.json')
+            );
 
-        const checkVerParams: IIpcParams = {
-            key: releaseJson.ver === updateJson.ver ? CHECK_VER_SAME : CHECK_VER_DIFFERENT,
-            message: {currentVersion: releaseJson.ver, updateVersion: updateJson.ver}
-        }
+            const checkVerParams: IIpcParams = {
+                key: releaseJson.ver === updateJson.ver ? CHECK_VER_SAME : CHECK_VER_DIFFERENT,
+                message: {currentVersion: releaseJson.ver, updateVersion: updateJson.ver}
+            }
 
-        _e.reply(CHECK_VER, checkVerParams);
+            _e.reply(CHECK_VER, checkVerParams);
+        });
 
     });
-
     ipcMain.on(UPDATE_FILE_TOTAL_COUNT, async (_e) => {
         if (!_objects) {
             console.log('UPDATE_FILE_TOTAL_COUNT');
@@ -83,13 +83,16 @@ export const onIpcEvent = (isDev: boolean) => {
                 const {mainUpdatePath} = getExtraUpdatePath(isDev);
                 const extraUpdatePath = paredPath.dir.replace(prefix_main, mainUpdatePath);
 
-                await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base, mainUpdatePath);
-                _e.reply(UPDATE_FILE_NAME, fileNameParams);
+                const writeStream = await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base, mainUpdatePath)
+
+                writeStream.on('finish',()=> {
+                    console.log('success');
+                    _e.reply(UPDATE_FILE_NAME, fileNameParams);
+                })
             }
         }
 
     });
-
     ipcMain.on(RUN_RAINER_APP, async (_e) => {
         const extraPath = getExtraPath(isDev);
         const {ver, date} = await jsonReadAsync(path.join(
@@ -134,5 +137,8 @@ export const onIpcEvent = (isDev: boolean) => {
         });
     }
 
+
+
 };
+
 

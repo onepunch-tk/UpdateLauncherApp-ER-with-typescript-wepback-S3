@@ -21,8 +21,7 @@ export const downloadFiles = async (downloadParams: GetObjectCommandInput, updat
     try {
         const fileResult = await s3Client.send(new GetObjectCommand(downloadParams));
         if (fileResult.Body instanceof Readable) {
-            const readable = fileResult.Body;
-            await fileWriteAsync(readable, updatePath, fileName, rootPath);
+            await fileWriteAsync(fileResult.Body, updatePath, fileName, rootPath);
         }
         // const s3 = new AWS.S3();
         // const s3Object = await s3.getObject(downloadParams);

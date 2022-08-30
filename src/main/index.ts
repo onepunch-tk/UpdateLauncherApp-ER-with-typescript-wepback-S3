@@ -1,4 +1,4 @@
-import {app, BrowserWindow} from 'electron';
+import {app, BrowserWindow, Menu} from 'electron';
 import {onIpcEvent} from "../shared/ipc/event-main";
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -13,13 +13,16 @@ const createWindow = (): void => {
     const mainWindow = new BrowserWindow({
         height: 600,
         width: 800,
+        resizable:false,
+        autoHideMenuBar: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
             preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
         },
     });
-
+    process.platform === "win32" && mainWindow.removeMenu();
+    process.platform === "darwin" && Menu.setApplicationMenu(Menu.buildFromTemplate([]));
     mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
     isDev && mainWindow.webContents.openDevTools();

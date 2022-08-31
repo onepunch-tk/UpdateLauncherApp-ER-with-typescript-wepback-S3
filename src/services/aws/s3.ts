@@ -7,7 +7,6 @@ import {
 } from '@aws-sdk/client-s3';
 import {Readable} from "stream";
 import { listCommandArray, S3Config, Bucket,} from "./configures";
-import path from "path";
 import {fileWriteAsync} from "./file-stream";
 
 
@@ -29,6 +28,8 @@ export const downloadFiles = async (downloadParams: GetObjectCommandInput, updat
     }
 }
 
+/**
+ * 파일 목록 가져오기*/
 export const listFiles = async (listCommandParams: listCommandArray) => {
     try {
         const filesArray: _Object[][] = [];

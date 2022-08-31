@@ -3,6 +3,8 @@ import React from 'react';
 //css
 import './styles/loading.css';
 
+/**
+ * loading 컴포넌트 */
 export const Loading = () => {
     return (
         <div className="loading-container">

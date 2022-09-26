@@ -28,7 +28,8 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "erb_typescript_webpack"
+            "name": "Brainer",
+            "appDirectory": "C:\\Program Files\\Rowan"
           }
         },
         {

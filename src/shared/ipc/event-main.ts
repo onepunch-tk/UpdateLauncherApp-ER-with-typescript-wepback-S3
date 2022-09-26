@@ -1,6 +1,6 @@
 import {ipcMain, app} from "electron";
 import {getExtraPath, getExtraUpdatePath} from "../path/extra-path";
-import {downloadFiles, listFiles} from "../../services/aws/s3";
+import {downloadFiles, getUpdateFiles} from "../../services/aws/s3";
 import {jsonReadAsync, jsonWriteAsync} from "../../services/aws/file-stream";
 import path from "path";
 import {_Object} from "@aws-sdk/client-s3";
@@ -19,14 +19,16 @@ import {
     prefix_main,
     releaseJsonKey
 } from "../../services/aws/configures";
+
 /**
  * 메인 브라우져 ipc 이벤트
  * isDev: 개발환경인지, 프로덕션 환경인지 구분*/
+let currentVer: string;
 export const onIpcEvent = (isDev: boolean) => {
 
     /**
      * s3 다운로드 객체*/
-    let _objects: _Object[][];
+    let _objects: _Object[];
 
     /**
      * 버젼체크 이벤트
@@ -48,7 +50,7 @@ export const onIpcEvent = (isDev: boolean) => {
 
         /**
          * writeStream 이벤트콜백(실제로 파일이 update.json이 정상적으로 쓰기가 끝나면 발생.*/
-        writeStream.on('finish', async ()=> {
+        writeStream.on('finish', async () => {
             /**
              * update.json에서 update 정보 읽기*/
             const updateJson = await jsonReadAsync(path.join(
@@ -61,7 +63,7 @@ export const onIpcEvent = (isDev: boolean) => {
                 key: releaseJson.ver === updateJson.ver ? CHECK_VER_SAME : CHECK_VER_DIFFERENT,
                 message: {currentVersion: releaseJson.ver, updateVersion: updateJson.ver}
             }
-
+            currentVer = releaseJson.ver;
             /**
              * 렌더러 리스너 이벤트 호출*/
             _e.reply(CHECK_VER, checkVerParams);
@@ -79,13 +81,9 @@ export const onIpcEvent = (isDev: boolean) => {
             _objects = await getFiles(isDev);
         }
 
-        let totalFileCount =  0;
-
         /**
          * 다운로드할 객체수 총합 구하기*/
-        for (const contents of _objects) {
-            totalFileCount += contents.length;
-        }
+        const totalFileCount = _objects.length;
 
         /**
          * ipc 전송 데이터 작성*/
@@ -112,44 +110,41 @@ export const onIpcEvent = (isDev: boolean) => {
 
         /**
          * 전체 파일 내려받기*/
-        for (const contents of _objects) {
-            for (const content of contents) {
-                const paredPath = path.parse(content.Key);
+        for (const content of _objects) {
+            const paredPath = path.parse(content.Key);
 
-                const fileNameParams: IIpcParams = {
-                    key: UPDATE_FILE_NAME,
-                    message: {fileName: paredPath.base}
-                };
+            const fileNameParams: IIpcParams = {
+                key: UPDATE_FILE_NAME,
+                message: {fileName: paredPath.base}
+            };
 
-                /**
-                 * 다운로드 총합에 디렉토리까지 딸려오는 현상때문에 걸러 준다...*/
-                if(paredPath.base === 'Brainer_Main'){
-                    _e.reply(UPDATE_FILE_NAME, fileNameParams);
-                    continue;
-                }
-
-                /**
-                 * 개발자환경인지, 프로덕션 환경인지 따라 다운로드 경로를 가져온다*/
-                const {mainUpdatePath} = getExtraUpdatePath(isDev);
-                /**
-                 * s3 다운로드 객체는 prefix(ex) download/Brainer_Main...)를 포함하므로 해당 path를 extra path로 변경*/
-                const extraUpdatePath = paredPath.dir.replace(prefix_main, mainUpdatePath);
-
-                /**
-                 * 파일 다운로드 후, 파일 쓰기*/
-                const writeStream = await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base, mainUpdatePath)
-
-                /**
-                 * 파일 쓰기가 완료돠면 호출되는 이벤트 콜백*/
-                writeStream.on('finish',()=> {
-                    console.log('success');
-                    /**
-                     * 파일 다운로드가 완료되면(개당) 파일네임을 렌더러 측에 전송하여, 파일 이름 상태업데이트와 퍼센테이지 상태 업데이트 진행*/
-                    _e.reply(UPDATE_FILE_NAME, fileNameParams);
-                })
+            /**
+             * 다운로드 총합에 디렉토리까지 딸려오는 현상때문에 걸러 준다...*/
+            if (paredPath.base === 'Brainer_Main') {
+                _e.reply(UPDATE_FILE_NAME, fileNameParams);
+                continue;
             }
-        }
 
+            /**
+             * 개발자환경인지, 프로덕션 환경인지 따라 다운로드 경로를 가져온다*/
+            const {mainUpdatePath} = getExtraUpdatePath(isDev);
+            /**
+             * s3 다운로드 객체는 prefix(ex) download/Brainer_Main...)를 포함하므로 해당 path를 extra path로 변경*/
+            const extraUpdatePath = paredPath.dir.replace(prefix_main, mainUpdatePath);
+
+            /**
+             * 파일 다운로드 후, 파일 쓰기*/
+            const writeStream = await downloadFiles(getObjectCommandInput(content.Key), extraUpdatePath, paredPath.base, mainUpdatePath)
+
+            /**
+             * 파일 쓰기가 완료돠면 호출되는 이벤트 콜백*/
+            writeStream.on('finish', () => {
+                console.log('success');
+                /**
+                 * 파일 다운로드가 완료되면(개당) 파일네임을 렌더러 측에 전송하여, 파일 이름 상태업데이트와 퍼센테이지 상태 업데이트 진행*/
+                _e.reply(UPDATE_FILE_NAME, fileNameParams);
+            });
+        }
     });
 
     /**
@@ -165,8 +160,6 @@ export const onIpcEvent = (isDev: boolean) => {
         /**
          * release.json에 업데이트된 정보 쓰기*/
         await jsonWriteAsync(path.join(extraPath, 'release.json'), {ver, date});
-
-        await sleep(1000);
 
         const {mainUpdatePath} = getExtraUpdatePath(isDev);
 
@@ -184,7 +177,7 @@ export const onIpcEvent = (isDev: boolean) => {
             /**
              * 브레이너가 종료되면 launcher도 같이 종료
              * launcher를 미리 종료하면, 브레이너 프로세스가 자식 프로세스이기때문에 같이 꺼져버리는 현상 발생*/
-            cp.on('exit', ()=> {
+            cp.on('exit', () => {
                 app.quit();
             })
 
@@ -206,13 +199,7 @@ export const onIpcEvent = (isDev: boolean) => {
                 UpdatePath: mainUpdatePath,
             },
         ];
-        return await listFiles(listCommandParams);
-    }
-
-    const sleep = async (ms: number) => {
-        return new Promise((resolve) => {
-            setTimeout(resolve, ms);
-        });
+        return await getUpdateFiles(listCommandParams, currentVer, isDev);
     }
 };
 

@@ -23,6 +23,7 @@ const createWindow = (): void => {
             contextIsolation: true,
             preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
         },
+        show:false
     });
     //플랫폼(os)에 따라 툴바 제거
     process.platform === "win32" && mainWindow.removeMenu();
@@ -32,6 +33,9 @@ const createWindow = (): void => {
     mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
     isDev && mainWindow.webContents.openDevTools();
+    mainWindow.once("ready-to-show",()=>{
+       mainWindow.show();
+    });
 };
 
 app.on('ready', () => {

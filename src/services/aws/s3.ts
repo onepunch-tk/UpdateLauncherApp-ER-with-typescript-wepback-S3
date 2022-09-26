@@ -6,8 +6,11 @@ import {
     S3Client
 } from '@aws-sdk/client-s3';
 import {Readable} from "stream";
-import { listCommandArray, S3Config, Bucket,} from "./configures";
+import {listCommandArray, S3Config, Bucket,} from "./configures";
 import {fileWriteAsync} from "./file-stream";
+import * as fs from "fs";
+import path from "path";
+import {getExtraPath} from "../../shared/path/extra-path";
 
 
 const s3Client = new S3Client(S3Config);
@@ -16,7 +19,7 @@ const s3Client = new S3Client(S3Config);
  * downloadParams: {Bucket: bucket name, Key:directory/filename...}
  * updatePath: download directory for your production path
  * fileName: download file name*/
-export const downloadFiles = async (downloadParams: GetObjectCommandInput, updatePath: string, fileName: string, rootPath?:string) => {
+export const downloadFiles = async (downloadParams: GetObjectCommandInput, updatePath: string, fileName: string, rootPath?: string) => {
     try {
         const fileResult = await s3Client.send(new GetObjectCommand(downloadParams));
         if (fileResult.Body instanceof Readable) {
@@ -28,11 +31,12 @@ export const downloadFiles = async (downloadParams: GetObjectCommandInput, updat
     }
 }
 
+
 /**
  * 파일 목록 가져오기*/
-export const listFiles = async (listCommandParams: listCommandArray) => {
+export const getUpdateFiles = async (listCommandParams: listCommandArray, updateVer: string, isDev: boolean) => {
     try {
-        const filesArray: _Object[][] = [];
+        let fileArr = new Array<_Object>();
         for (const listCommand of listCommandParams) {
 
             const download_list_parmas = {
@@ -40,10 +44,27 @@ export const listFiles = async (listCommandParams: listCommandArray) => {
                 Prefix: listCommand.Prefix,
             }
             const outputs = await s3Client.send(new ListObjectsCommand(download_list_parmas));
-            filesArray.push(outputs.Contents);
-        }
 
-        return filesArray;
+            if (updateVer === "0.0.0") {
+                fileArr = [...fileArr, ...outputs.Contents];
+            } else {
+                outputs.Contents.map(s3Object => {
+                    const parsedPath = s3Object.Key.replace("download", "");
+                    const extraFullPath = path.join(getExtraPath(isDev), parsedPath);
+
+                    if (!fs.existsSync(extraFullPath)) {
+                        fileArr.push(s3Object);
+                    }
+
+                    const currentFileStat = fs.statSync(extraFullPath);
+                    const lastModifyDate = new Date(currentFileStat.mtime);
+                    if (s3Object.LastModified > lastModifyDate) {
+                        fileArr.push(s3Object);
+                    }
+                });
+            }
+        }
+        return fileArr;
     } catch (err) {
         console.log(err);
     }

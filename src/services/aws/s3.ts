@@ -31,12 +31,11 @@ export const downloadFiles = async (downloadParams: GetObjectCommandInput, updat
     }
 }
 
-
 /**
  * 파일 목록 가져오기*/
 export const getUpdateFiles = async (listCommandParams: listCommandArray, updateVer: string, isDev: boolean) => {
     try {
-        let fileArr = new Array<_Object>();
+        const fileArr = new Array<_Object>();
         for (const listCommand of listCommandParams) {
 
             const download_list_parmas = {
@@ -45,24 +44,21 @@ export const getUpdateFiles = async (listCommandParams: listCommandArray, update
             }
             const outputs = await s3Client.send(new ListObjectsCommand(download_list_parmas));
 
-            if (updateVer === "0.0.0") {
-                fileArr = [...fileArr, ...outputs.Contents];
-            } else {
-                outputs.Contents.map(s3Object => {
-                    const parsedPath = s3Object.Key.replace("download", "");
-                    const extraFullPath = path.join(getExtraPath(isDev), parsedPath);
+            outputs.Contents.map(s3Object => {
+                const parsedPath = s3Object.Key.replace("download", "");
+                const extraFullPath = path.join(getExtraPath(isDev), parsedPath);
 
-                    if (!fs.existsSync(extraFullPath)) {
-                        fileArr.push(s3Object);
-                    }
+                if (!fs.existsSync(extraFullPath)) {
+                    console.log(extraFullPath);
+                    return fileArr.push(s3Object);
+                }
 
-                    const currentFileStat = fs.statSync(extraFullPath);
-                    const lastModifyDate = new Date(currentFileStat.mtime);
-                    if (s3Object.LastModified > lastModifyDate) {
-                        fileArr.push(s3Object);
-                    }
-                });
-            }
+                const currentFileStat = fs.statSync(extraFullPath);
+                const createdDate = new Date(currentFileStat.ctime);
+                if (s3Object.LastModified > createdDate) {
+                    return fileArr.push(s3Object);
+                }
+            });
         }
         return fileArr;
     } catch (err) {

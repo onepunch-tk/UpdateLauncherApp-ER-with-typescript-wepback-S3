@@ -17,6 +17,7 @@
     "email": "yourEmail"
   },
   "license": "MIT",
+
   "config": {
     "forge": {
       "packagerConfig": {
@@ -28,8 +29,7 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "Brainer",
-            "appDirectory": "C:\\Program Files\\Rowan"
+            "name": "Brainer_Launcher"
           }
         },
         {

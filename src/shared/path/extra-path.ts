@@ -18,7 +18,7 @@ export const getExtraPath = (isDev: boolean) => {
  * 브레이너 다운로드 path*/
 export const getExtraUpdatePath = (isDev:boolean) => {
     const mainUpdatePath = path.join(getExtraPath(isDev), 'Brainer_Main');
-    const gameUpdatePath = path.join(mainUpdatePath, 'GijangStart_Data/StreamingAssets/Brainer_New');
+    const gameUpdatePath = path.join(mainUpdatePath, 'Brainer_Game');
 
     return {mainUpdatePath, gameUpdatePath};
 }

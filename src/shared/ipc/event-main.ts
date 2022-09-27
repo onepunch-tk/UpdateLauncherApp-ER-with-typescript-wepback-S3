@@ -1,24 +1,11 @@
+import path from "path";
+import * as exec from 'child_process';
 import {ipcMain, app} from "electron";
 import {getExtraPath, getExtraUpdatePath} from "../path/extra-path";
 import {downloadFiles, getUpdateFiles} from "../../services/aws/s3";
-import {jsonReadAsync, jsonWriteAsync} from "../../services/aws/file-stream";
-import path from "path";
+import {RUN_BRAINER_APP, UPDATE_FILE_NAME, UPDATE_FILE_TOTAL_COUNT} from "./constants";
+import {getObjectCommandInput, listCommandArray, prefix_main} from "../../services/aws/configures";
 import {_Object} from "@aws-sdk/client-s3";
-import * as fs from "fs";
-import * as exec from 'child_process';
-import {
-    CHECK_VER,
-    CHECK_VER_DIFFERENT,
-    CHECK_VER_SAME, RUN_RAINER_APP,
-    UPDATE_FILE_NAME,
-    UPDATE_FILE_TOTAL_COUNT
-} from "./constants";
-import {
-    getObjectCommandInput,
-    listCommandArray,
-    prefix_main,
-    releaseJsonKey
-} from "../../services/aws/configures";
 
 /**
  * 메인 브라우져 ipc 이벤트
@@ -31,53 +18,11 @@ export const onIpcEvent = (isDev: boolean) => {
     let _objects: _Object[];
 
     /**
-     * 버젼체크 이벤트
-     * */
-    ipcMain.on(CHECK_VER, async (_e) => {
-        /**
-         * extra root path*/
-        const extraPath = getExtraPath(isDev);
-
-        /**
-         *extra root path에서 release.json 파일 읽어온다 */
-        const releaseJson = await jsonReadAsync(path.join(
-            extraPath, 'release.json')
-        );
-
-        /**
-         * s3 버켓에서 release.json 파일을 다운로드 한후, update.json으로 extra root path에 저장*/
-        const writeStream = await downloadFiles(getObjectCommandInput(releaseJsonKey), extraPath, 'update.json');
-
-        /**
-         * writeStream 이벤트콜백(실제로 파일이 update.json이 정상적으로 쓰기가 끝나면 발생.*/
-        writeStream.on('finish', async () => {
-            /**
-             * update.json에서 update 정보 읽기*/
-            const updateJson = await jsonReadAsync(path.join(
-                extraPath, 'update.json')
-            );
-
-            /**
-             * ipc 전송 데이터 작성*/
-            const checkVerParams: IIpcParams = {
-                key: releaseJson.ver === updateJson.ver ? CHECK_VER_SAME : CHECK_VER_DIFFERENT,
-                message: {currentVersion: releaseJson.ver, updateVersion: updateJson.ver}
-            }
-            currentVer = releaseJson.ver;
-            /**
-             * 렌더러 리스너 이벤트 호출*/
-            _e.reply(CHECK_VER, checkVerParams);
-        });
-
-    });
-
-    /**
      * 업데이트 진행할 토탈 파일수를 불러온다.*/
     ipcMain.on(UPDATE_FILE_TOTAL_COUNT, async (_e) => {
         /**
          * 다운로드할 객체가 비어있으면 다운로드 객체들을 불러온다*/
         if (!_objects) {
-            console.log('UPDATE_FILE_TOTAL_COUNT');
             _objects = await getFiles(isDev);
         }
 
@@ -139,7 +84,6 @@ export const onIpcEvent = (isDev: boolean) => {
             /**
              * 파일 쓰기가 완료돠면 호출되는 이벤트 콜백*/
             writeStream.on('finish', () => {
-                console.log('success');
                 /**
                  * 파일 다운로드가 완료되면(개당) 파일네임을 렌더러 측에 전송하여, 파일 이름 상태업데이트와 퍼센테이지 상태 업데이트 진행*/
                 _e.reply(UPDATE_FILE_NAME, fileNameParams);
@@ -149,26 +93,8 @@ export const onIpcEvent = (isDev: boolean) => {
 
     /**
      * 업데이트 완료 후 브레이너 실행 이벤트*/
-    ipcMain.on(RUN_RAINER_APP, async (_e) => {
-        const extraPath = getExtraPath(isDev);
-        /**
-         * update.json에서 업데이트 정보를 읽어온다.*/
-        const {ver, date} = await jsonReadAsync(path.join(
-            extraPath, 'update.json')
-        );
-
-        /**
-         * release.json에 업데이트된 정보 쓰기*/
-        await jsonWriteAsync(path.join(extraPath, 'release.json'), {ver, date});
-
+    ipcMain.on(RUN_BRAINER_APP, async (_e) => {
         const {mainUpdatePath} = getExtraUpdatePath(isDev);
-
-        /**
-         * update.json 제거*/
-        fs.unlink(path.join(extraPath, 'update.json'), (err) => {
-            //
-        })
-        // spawn(path.join(mainUpdatePath, 'GijangStart.exe'));
 
         /**
          * 브레이너 실행, */
